@@ -331,49 +331,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="glass-card rounded-3xl p-12 text-center"
-          >
-            <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-xl text-muted-foreground mb-8">
-              Join hundreds of satisfied clients and streamline your IT project booking today
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/signup">
-                <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 gap-2">
-                  Create Free Account <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <footer className="py-12 border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold">TechFlow</span>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              © 2024 TechFlow. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      
+     
     </div>
   );
 }
