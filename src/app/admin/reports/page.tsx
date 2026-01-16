@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line
@@ -78,14 +79,7 @@ export default function AdminReportsPage() {
     { name: "Rejected", value: bookings.filter((b) => b.status === "rejected").length, color: "#ef4444" },
   ].filter((d) => d.value > 0);
 
-  const monthlyData = [
-    { month: "Jan", bookings: Math.floor(Math.random() * 10), revenue: Math.floor(Math.random() * 50000) },
-    { month: "Feb", bookings: Math.floor(Math.random() * 10), revenue: Math.floor(Math.random() * 50000) },
-    { month: "Mar", bookings: Math.floor(Math.random() * 10), revenue: Math.floor(Math.random() * 50000) },
-    { month: "Apr", bookings: Math.floor(Math.random() * 10), revenue: Math.floor(Math.random() * 50000) },
-    { month: "May", bookings: Math.floor(Math.random() * 10), revenue: Math.floor(Math.random() * 50000) },
-    { month: "Jun", bookings: bookings.length, revenue: stats.totalRevenue },
-  ];
+ 
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,7 +130,7 @@ export default function AdminReportsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-indigo-100 text-sm">Total Revenue</p>
-                    <p className="text-3xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                    <p className="text-3xl font-bold">{formatPrice(stats.totalRevenue)}</p>
                   </div>
                   <DollarSign className="w-10 h-10 text-indigo-200" />
                 </div>
@@ -199,7 +193,7 @@ export default function AdminReportsPage() {
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip
-                        formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+                        formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, "Revenue"]}
                         contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }}
                       />
                       <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
@@ -250,48 +244,7 @@ export default function AdminReportsPage() {
             </Card>
           </div>
 
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Monthly Trends
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }}
-                    />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="bookings"
-                      stroke="#6366f1"
-                      strokeWidth={2}
-                      dot={{ fill: "#6366f1" }}
-                      name="Bookings"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={{ fill: "#10b981" }}
-                      name="Revenue ($)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
+         
           <div className="grid lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -314,6 +267,8 @@ export default function AdminReportsPage() {
                               style={{ backgroundColor: `${service.color}20` }}
                             >
                               <Icon className="w-5 h-5" style={{ color: service.color }} />
+
+
                             </div>
                             <div>
                               <p className="font-medium">{service.fullName}</p>
@@ -322,9 +277,9 @@ export default function AdminReportsPage() {
                               </p>
                             </div>
                           </div>
-                          <p className="font-semibold" style={{ color: service.color }}>
-                            ${service.revenue.toLocaleString()}
-                          </p>
+<p className="font-semibold" style={{ color: service.color }}>
+                              {formatPrice(service.revenue)}
+                            </p>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
@@ -344,22 +299,22 @@ export default function AdminReportsPage() {
                 <CardTitle>Key Metrics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="p-4 bg-muted/50 rounded-xl">
-                  <p className="text-sm text-muted-foreground mb-1">Average Project Value</p>
-                  <p className="text-2xl font-bold">${stats.avgProjectValue.toLocaleString()}</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-xl">
-                  <p className="text-sm text-muted-foreground mb-1">Completed Revenue</p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    ${stats.completedRevenue.toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-xl">
-                  <p className="text-sm text-muted-foreground mb-1">Pipeline Value</p>
-                  <p className="text-2xl font-bold text-indigo-600">
-                    ${(stats.totalRevenue - stats.completedRevenue).toLocaleString()}
-                  </p>
-                </div>
+<div className="p-4 bg-muted/50 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">Average Project Value</p>
+                    <p className="text-2xl font-bold">{formatPrice(stats.avgProjectValue)}</p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">Completed Revenue</p>
+                    <p className="text-2xl font-bold text-emerald-600">
+                      {formatPrice(stats.completedRevenue)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-xl">
+                    <p className="text-sm text-muted-foreground mb-1">Pipeline Value</p>
+                    <p className="text-2xl font-bold text-indigo-600">
+                      {formatPrice(stats.totalRevenue - stats.completedRevenue)}
+                    </p>
+                  </div>
               </CardContent>
             </Card>
           </div>

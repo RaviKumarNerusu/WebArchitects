@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore, BookingRequest } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -327,34 +328,34 @@ export default function AdminBookingDetail({ params }: { params: Promise<{ id: s
                     Pricing
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Base Price</span>
-                    <span className="font-medium">${service?.basePrice.toLocaleString() || 0}</span>
-                  </div>
-                  
-                  {selectedFeatures.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">Features:</p>
-                      {selectedFeatures.map((feature) => (
-                        <div key={feature.id} className="flex justify-between text-sm">
-                          <span className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            {feature.name}
-                          </span>
-                          <span>+${feature.price.toLocaleString()}</span>
-                        </div>
-                      ))}
+<CardContent className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Base Price</span>
+                      <span className="font-medium">{formatPrice(service?.basePrice || 0)}</span>
                     </div>
-                  )}
+                    
+                    {selectedFeatures.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-sm text-muted-foreground">Features:</p>
+                        {selectedFeatures.map((feature) => (
+                          <div key={feature.id} className="flex justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              {feature.name}
+                            </span>
+                            <span>+{formatPrice(feature.price)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                  <div className="flex justify-between pt-4 border-t">
-                    <span className="font-semibold">Total</span>
-                    <span className="font-bold text-indigo-600 text-xl">
-                      ${booking.totalPrice.toLocaleString()}
-                    </span>
-                  </div>
-                </CardContent>
+                    <div className="flex justify-between pt-4 border-t">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-indigo-600 text-xl">
+                        {formatPrice(booking.totalPrice)}
+                      </span>
+                    </div>
+                  </CardContent>
               </Card>
 
               {booking.attachments.length > 0 && (

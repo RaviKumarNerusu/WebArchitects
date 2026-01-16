@@ -7,6 +7,7 @@ import { Globe, Smartphone, Cloud, Cog, ArrowRight, ArrowLeft, Sparkles, LogOut 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAppStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 import { useEffect } from "react";
 
 const serviceIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -110,9 +111,9 @@ export default function ServicesPage() {
                         <div className="flex items-center justify-between pt-4 border-t">
                           <div>
                             <p className="text-sm text-muted-foreground">Starting from</p>
-                            <p className="text-2xl font-bold text-indigo-600">
-                              ${service.basePrice.toLocaleString()}
-                            </p>
+<p className="text-2xl font-bold text-indigo-600">
+                                {formatPrice(service.basePrice)}
+                              </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">Est. timeline</p>

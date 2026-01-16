@@ -4,6 +4,8 @@ import "./globals.css";
 import { VisualEditsMessenger } from "orchids-visual-edits";
 import { Toaster } from "@/components/ui/sonner";
 import Script from "next/script";
+import { ChatWidget } from "@/components/chat-widget";
+import { StoreProvider } from "@/components/store-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +38,10 @@ export default function RootLayout({
           strategy="afterInteractive"
           data-orchids-project-id="cde9f84d-d8fe-4890-ad0f-7e67657880e4"
         />
-        {children}
+        <StoreProvider>
+          {children}
+          <ChatWidget />
+        </StoreProvider>
         <Toaster position="top-right" richColors />
         <VisualEditsMessenger />
       </body>

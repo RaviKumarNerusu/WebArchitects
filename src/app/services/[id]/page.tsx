@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 
 const serviceIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   Globe,
@@ -162,7 +163,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                             <div className="flex items-center gap-6 text-sm">
                               <div className="flex items-center gap-1 text-emerald-600">
                                 <DollarSign className="w-4 h-4" />
-                                <span className="font-medium">+${feature.price.toLocaleString()}</span>
+                                <span className="font-medium">+{formatPrice(feature.price)}</span>
                               </div>
                               <div className="flex items-center gap-1 text-muted-foreground">
                                 <Clock className="w-4 h-4" />
@@ -192,7 +193,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   <div className="space-y-4 mb-6">
                     <div className="flex justify-between items-center pb-4 border-b">
                       <span className="text-muted-foreground">Base Service</span>
-                      <span className="font-medium">${service.basePrice.toLocaleString()}</span>
+                      <span className="font-medium">{formatPrice(service.basePrice)}</span>
                     </div>
                     
                     {selectedFeaturesList.length > 0 && (
@@ -204,19 +205,19 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                               <Check className="w-4 h-4 text-emerald-500" />
                               {feature.name}
                             </span>
-                            <span>+${feature.price.toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+<span>+{formatPrice(feature.price)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="bg-muted/50 rounded-xl p-4 mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold">Total Estimate</span>
-                      <span className="text-2xl font-bold text-indigo-600">
-                        ${totalPrice.toLocaleString()}
-                      </span>
+                    <div className="bg-muted/50 rounded-xl p-4 mb-6">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-semibold">Total Estimate</span>
+                        <span className="text-2xl font-bold text-indigo-600">
+                          {formatPrice(totalPrice)}
+                        </span>
                     </div>
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <span>Estimated Timeline</span>

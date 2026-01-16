@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Sparkles, LogOut, Upload, Check, Clock, DollarSign
+  ArrowLeft, Sparkles, LogOut, Upload, Check, Clock, DollarSign, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,18 +14,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppStore, BookingRequest } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
 
 const budgetRanges = [
-  "Under $5,000",
-  "$5,000 - $10,000",
-  "$10,000 - $25,000",
-  "$25,000 - $50,000",
-  "$50,000+",
+  "Under ₹1,00,000",
+  "₹1,00,000 - ₹2,00,000",
+  "₹2,00,000 - ₹3,00,000",
+  "₹3,00,000 - ₹4,00,000",
+  "₹4,00,000 - ₹5,00,000",
 ];
 
-export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function BookingContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUser, setCurrentUser, services, addBooking } = useAppStore();
@@ -278,7 +278,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                     <div className="pb-4 border-b">
                       <p className="font-medium mb-1">{service.name}</p>
                       <p className="text-sm text-muted-foreground">Base package</p>
-                      <p className="text-right font-medium">${service.basePrice.toLocaleString()}</p>
+                      <p className="text-right font-medium">{formatPrice(service.basePrice)}</p>
                     </div>
                     
                     {selectedFeatures.length > 0 && (
@@ -290,7 +290,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                               <Check className="w-3 h-3 text-emerald-500" />
                               {feature.name}
                             </span>
-                            <span>+${feature.price.toLocaleString()}</span>
+                            <span>+{formatPrice(feature.price)}</span>
                           </div>
                         ))}
                       </div>
@@ -304,7 +304,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                         <span className="font-semibold">Total</span>
                       </div>
                       <span className="text-2xl font-bold text-indigo-600">
-                        ${totalPrice.toLocaleString()}
+                        {formatPrice(totalPrice)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -333,5 +333,26 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
         </div>
       </main>
     </div>
+  );
+}
+
+function BookingLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+        <p className="text-muted-foreground">Loading booking details...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  
+  return (
+    <Suspense fallback={<BookingLoading />}>
+      <BookingContent id={id} />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications";
 
 const serviceIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   Globe,
@@ -30,12 +32,36 @@ const statusConfig = {
 export default function DashboardPage() {
   const router = useRouter();
   const { currentUser, setCurrentUser, services, bookings } = useAppStore();
+  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== "client") {
       router.push("/login");
     }
   }, [currentUser, router]);
+
+  const syncFromStorage = useCallback(() => {
+    useAppStore.persist.rehydrate();
+    forceUpdate({});
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'it-service-booking-storage') {
+        syncFromStorage();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(() => {
+      syncFromStorage();
+    }, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [syncFromStorage]);
 
   if (!currentUser) {
     return null;
@@ -60,15 +86,16 @@ export default function DashboardPage() {
               <span className="text-xl font-bold gradient-text">TechFlow</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                Welcome, <strong>{currentUser.name}</strong>
-              </span>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+<div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground hidden sm:block">
+                  Welcome, <strong>{currentUser.name}</strong>
+                </span>
+                <NotificationBell />
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
           </div>
         </div>
       </nav>
@@ -112,9 +139,9 @@ export default function DashboardPage() {
                           <h3 className="font-semibold mb-1">{service.name}</h3>
                           <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-indigo-600">
-                              From ${service.basePrice.toLocaleString()}
-                            </span>
+<span className="text-sm font-medium text-indigo-600">
+                                From {formatPrice(service.basePrice)}
+                              </span>
                             <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
                           </div>
                         </CardContent>
@@ -181,7 +208,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">Total</p>
-                                  <p className="font-medium">${booking.totalPrice.toLocaleString()}</p>
+                                  <p className="font-medium">{formatPrice(booking.totalPrice)}</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-muted-foreground" />
                               </div>

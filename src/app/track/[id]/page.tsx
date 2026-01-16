@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, use } from "react";
+import { useEffect, use, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, LogOut, Clock, CheckCircle2, 
-  AlertCircle, Loader2, MessageSquare, Calendar, DollarSign
+  AlertCircle, Loader2, MessageSquare, Calendar, IndianRupee, Star,
+  Users, Download, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
+import { ReviewForm } from "@/components/review";
+import { NotificationBell } from "@/components/notifications";
+import { ProgressTracker } from "@/components/progress-tracker";
 
 const statusConfig = {
   requested: { color: "bg-amber-100 text-amber-700", icon: Clock, label: "Requested", step: 1 },
@@ -24,16 +29,42 @@ const statusConfig = {
 export default function TrackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { currentUser, setCurrentUser, bookings, services } = useAppStore();
+  const { currentUser, setCurrentUser, bookings, services, getBookingReview } = useAppStore();
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [, forceUpdate] = useState({});
 
   const booking = bookings.find((b) => b.id === id);
   const service = booking ? services.find((s) => s.id === booking.serviceId) : null;
+  const existingReview = booking ? getBookingReview(booking.id) : undefined;
 
   useEffect(() => {
     if (!currentUser) {
       router.push("/login");
     }
   }, [currentUser, router]);
+
+  const syncFromStorage = useCallback(() => {
+    useAppStore.persist.rehydrate();
+    forceUpdate({});
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'it-service-booking-storage') {
+        syncFromStorage();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(() => {
+      syncFromStorage();
+    }, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [syncFromStorage]);
 
   if (!currentUser || !booking) {
     return null;
@@ -47,13 +78,50 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
     router.push("/");
   };
 
-  const progressSteps = [
-    { label: "Requested", step: 1 },
-    { label: "In Progress", step: 2 },
-    { label: "Completed", step: 3 },
-  ];
+  const downloadInvoice = () => {
+    const invoiceContent = `
+=====================================
+         TECHFLOW INVOICE
+=====================================
 
-  const currentStep = status.step;
+Invoice #: INV-${booking.id.slice(-8).toUpperCase()}
+Date: ${format(new Date(), 'dd MMM yyyy')}
+
+CLIENT DETAILS
+--------------
+Name: ${booking.clientName}
+Email: ${booking.clientEmail}
+
+PROJECT DETAILS
+---------------
+Service: ${booking.serviceName}
+Base Price: ${formatPrice(service?.basePrice || 0)}
+
+Selected Features:
+${booking.selectedFeatures.map(f => {
+  const feature = service?.features.find(feat => feat.id === f);
+  return `  - ${feature?.name || f}: ${formatPrice(feature?.price || 0)}`;
+}).join('\n')}
+
+SUMMARY
+-------
+Total Amount: ${formatPrice(booking.totalPrice)}
+Estimated Duration: ${booking.estimatedTime} days
+Status: ${booking.status.toUpperCase()}
+
+=====================================
+Thank you for choosing TechFlow!
+=====================================
+    `;
+
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${booking.id.slice(-8)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,9 +144,14 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
             </div>
 
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span className="hidden sm:inline">Live</span>
+              </div>
               <span className="text-sm text-muted-foreground hidden sm:block">
                 {currentUser.name}
               </span>
+              <NotificationBell />
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
               </Button>
@@ -103,49 +176,42 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
               </div>
               <p className="text-muted-foreground">Booking ID: {booking.id}</p>
             </div>
+            <Button onClick={downloadInvoice} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Download Invoice
+            </Button>
           </div>
 
-          <Card className="mb-8">
+          <Card className="mb-8 overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
+              <h2 className="text-lg font-semibold text-white">Project Progress</h2>
+            </div>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-6">Project Progress</h2>
-              
-              <div className="relative">
-                <div className="absolute top-5 left-0 right-0 h-1 bg-muted rounded-full">
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
-                    style={{ width: `${(currentStep / 3) * 100}%` }}
-                  />
-                </div>
-                
-                <div className="relative flex justify-between">
-                  {progressSteps.map((step) => {
-                    const isCompleted = currentStep >= step.step;
-                    const isCurrent = currentStep === step.step;
-                    return (
-                      <div key={step.label} className="flex flex-col items-center">
-                        <div 
-                          className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all ${
-                            isCompleted 
-                              ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white" 
-                              : "bg-muted text-muted-foreground"
-                          } ${isCurrent ? "ring-4 ring-indigo-200" : ""}`}
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">{step.step}</span>
-                          )}
-                        </div>
-                        <span className={`mt-2 text-sm ${isCompleted ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                          {step.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <ProgressTracker status={booking.status} assignedTeam={booking.assignedTeam} />
             </CardContent>
           </Card>
+
+          {booking.assignedTeam && booking.assignedTeam.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Card className="mb-8 border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                      <Users className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Your Team</h3>
+                      <p className="text-indigo-700 font-medium">{booking.assignedTeam[0]}</p>
+                      <p className="text-sm text-muted-foreground">Working on your project</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
@@ -180,24 +246,24 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-emerald-600" />
+                  <IndianRupee className="w-5 h-5 text-emerald-600" />
                   Pricing
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Base Price</span>
-                    <span className="font-medium">${service?.basePrice.toLocaleString() || 0}</span>
+                    <span className="font-medium">{formatPrice(service?.basePrice || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Features</span>
                     <span className="font-medium">
-                      +${((booking.totalPrice || 0) - (service?.basePrice || 0)).toLocaleString()}
+                      +{formatPrice((booking.totalPrice || 0) - (service?.basePrice || 0))}
                     </span>
                   </div>
                   <div className="flex justify-between pt-3 border-t">
                     <span className="font-semibold">Total Estimate</span>
-                    <span className="font-bold text-indigo-600">
-                      ${booking.totalPrice.toLocaleString()}
+                    <span className="font-bold text-indigo-600 text-lg">
+                      {formatPrice(booking.totalPrice)}
                     </span>
                   </div>
                 </div>
@@ -214,7 +280,7 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="mb-8">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -230,7 +296,12 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
                     className="flex gap-4"
                   >
                     <div className="flex flex-col items-center">
-                      <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                      <motion.div 
+                        className="w-3 h-3 rounded-full bg-indigo-500"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: index * 0.1 + 0.2 }}
+                      />
                       {index < booking.timeline.length - 1 && (
                         <div className="w-0.5 h-full bg-muted flex-1 mt-2" />
                       )}
@@ -246,8 +317,71 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
               </div>
             </CardContent>
           </Card>
+
+          {booking.status === "completed" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <Star className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">
+                          {existingReview ? "Thanks for your review!" : "Rate Your Experience"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {existingReview 
+                            ? `You gave ${existingReview.rating} stars`
+                            : "Help us improve by sharing your feedback"
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    {!existingReview && (
+                      <Button
+                        onClick={() => setShowReviewForm(true)}
+                        className="bg-gradient-to-r from-emerald-500 to-teal-600"
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        Leave Review
+                      </Button>
+                    )}
+                    {existingReview && (
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-6 h-6 ${
+                              star <= existingReview.rating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </motion.div>
       </main>
+
+      <AnimatePresence>
+        {showReviewForm && booking && (
+          <ReviewForm
+            bookingId={booking.id}
+            serviceId={booking.serviceId}
+            onClose={() => setShowReviewForm(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

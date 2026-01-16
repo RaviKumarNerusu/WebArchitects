@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/lib/store";
 import { toast } from "sonner";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -30,11 +30,41 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  const isValidAdminEmail = (email: string) => {
+    const adminEmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    return adminEmailPattern.test(email) && email.toLowerCase().includes("admin");
+  };
+
   const handleLogin = async (e: React.FormEvent, role: "client" | "admin") => {
     e.preventDefault();
     setIsLoading(true);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    if (role === "admin") {
+      if (!isValidAdminEmail(email)) {
+        toast.error("Admin email must be in format: adminusername@gmail.com");
+        setIsLoading(false);
+        return;
+      }
+      
+      if (password.length >= 6) {
+        const adminUser = {
+          id: `admin-${Date.now()}`,
+          email: email,
+          name: email.split("@")[0].replace(/admin/i, "").replace(/[^a-zA-Z]/g, "") || "Admin",
+          role: "admin" as const,
+          createdAt: new Date().toISOString(),
+        };
+        setCurrentUser(adminUser);
+        toast.success("Welcome, Admin!");
+        router.push("/admin");
+      } else {
+        toast.error("Password must be at least 6 characters.");
+      }
+      setIsLoading(false);
+      return;
+    }
 
     const user = users.find(
       (u) => u.email === email && u.role === role
@@ -43,22 +73,9 @@ export default function LoginPage() {
     if (user) {
       setCurrentUser(user);
       toast.success(`Welcome back, ${user.name}!`);
-      router.push(role === "admin" ? "/admin" : "/dashboard");
+      router.push("/dashboard");
     } else {
-      if (role === "admin" && email === "admin@techflow.com" && password === "admin123") {
-        const adminUser = {
-          id: "admin-1",
-          email: "admin@techflow.com",
-          name: "Admin User",
-          role: "admin" as const,
-          createdAt: new Date().toISOString(),
-        };
-        setCurrentUser(adminUser);
-        toast.success("Welcome, Admin!");
-        router.push("/admin");
-      } else {
-        toast.error("Invalid credentials. Please try again or sign up.");
-      }
+      toast.error("Invalid credentials. Please try again or sign up.");
     }
 
     setIsLoading(false);
@@ -188,7 +205,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-                  <strong>Demo:</strong> admin@techflow.com / admin123
+                  <strong>Note:</strong> Use email format: adminusername@gmail.com
                 </div>
 
                 <Button
@@ -212,5 +229,24 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+function LoginLoading() {
+  return (
+    <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 }
